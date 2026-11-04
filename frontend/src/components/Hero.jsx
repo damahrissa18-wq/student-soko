@@ -15,7 +15,7 @@ const shoppers = [
   { initials: 'NJ', className: 'bg-sand text-ink' },
 ]
 
-export default function Hero({ onAdd }) {
+export default function Hero({ onQuickAdd }) {
   const heroProduct = products[0]
 
   return (
@@ -53,9 +53,9 @@ export default function Hero({ onAdd }) {
             </h1>
 
             <p className="mt-6 max-w-md text-base leading-relaxed text-ink/65 sm:text-lg">
-              Hoodies, tees and everyday merch made for lecture halls, hostels
-              and everything in between. Order today, wear it on campus
-              tomorrow.
+              Hoodies, tees, bags, notebooks and travel gear made for lecture
+              halls, hostels and everything in between. Order today, sorted for
+              campus tomorrow.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -185,9 +185,9 @@ export default function Hero({ onAdd }) {
                 </div>
                 <button
                   type="button"
-                  onClick={() => onAdd(heroProduct)}
+                  onClick={() => onQuickAdd(heroProduct)}
                   className="grid size-10 shrink-0 place-items-center rounded-full bg-ink text-cream transition hover:bg-flame"
-                  aria-label={`Add ${heroProduct.name} to cart`}
+                  aria-label={`Choose options for ${heroProduct.name}`}
                 >
                   <Plus className="size-4" aria-hidden="true" />
                 </button>

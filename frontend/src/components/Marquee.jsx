@@ -25,7 +25,6 @@ function MarqueeGroup() {
     </div>
   )
 }
-
 export default function Marquee() {
   return (
     <div

@@ -1,0 +1,208 @@
+{
+  "products": [
+    {
+      "id": "campus-classic-hoodie",
+      "name": "Campus Classic Hoodie",
+      "category": "Hoodies",
+      "price": 2500,
+      "oldPrice": 3200,
+      "image": "/images/hoodie.jpg",
+      "badge": "Best seller",
+      "description": "The one you reach for on 8am lecture days. Heavy brushed fleece, a roomy hood and a relaxed drop-shoulder fit that layers cleanly over a tee.",
+      "details": [
+        "320gsm brushed cotton fleece",
+        "Drop-shoulder fit with kangaroo pocket",
+        "Ribbed cuffs and hem",
+        "Unisex sizing"
+      ],
+      "sizes": ["S", "M", "L", "XL", "XXL"],
+      "defaultStock": 8,
+      "colors": [
+        { "name": "Ink", "hex": "#121212" },
+        { "name": "Lime", "hex": "#d9f56b" },
+        { "name": "Sand", "hex": "#efe3cf" }
+      ]
+    },
+    {
+      "id": "soko-heavy-tee",
+      "name": "Soko Heavy Tee",
+      "category": "Tees",
+      "price": 1200,
+      "oldPrice": null,
+      "image": "/images/white-tee.jpg",
+      "badge": "New",
+      "description": "A heavyweight tee with a boxy, structured drape. Thick enough to wear on its own, simple enough to wear every week.",
+      "details": [
+        "240gsm heavyweight cotton",
+        "Boxy unisex fit",
+        "Reinforced neckline",
+        "Pre-shrunk"
+      ],
+      "sizes": ["XS", "S", "M", "L", "XL", "XXL"],
+      "defaultStock": 14,
+      "colors": [
+        { "name": "Cream", "hex": "#f5f1e8" },
+        { "name": "Ink", "hex": "#121212" },
+        { "name": "Flame", "hex": "#ff4d1c" }
+      ]
+    },
+    {
+      "id": "night-class-cap",
+      "name": "Night Class Cap",
+      "category": "Caps",
+      "price": 900,
+      "oldPrice": 1100,
+      "image": "/images/cap.jpg",
+      "badge": null,
+      "description": "A soft, unstructured six-panel cap for late library sessions and early morning commutes. Adjustable at the back, comfortable all day.",
+      "details": [
+        "Unstructured cotton twill",
+        "Six-panel construction",
+        "Adjustable metal buckle strap",
+        "One size fits most"
+      ],
+      "sizes": ["One size"],
+      "defaultStock": 20,
+      "colors": [
+        { "name": "Ink", "hex": "#121212" },
+        { "name": "Sand", "hex": "#efe3cf" },
+        { "name": "Lime", "hex": "#d9f56b" }
+      ]
+    },
+    {
+      "id": "lecture-hall-tote",
+      "name": "Lecture Hall Tote",
+      "category": "Bags",
+      "price": 1100,
+      "oldPrice": null,
+      "image": "/images/tote.jpg",
+      "badge": null,
+      "description": "Everything for a full day on campus in one sturdy canvas tote. A padded laptop sleeve keeps your machine safe between halls.",
+      "details": [
+        "12oz heavy cotton canvas",
+        "Fits a 15-inch laptop",
+        "Internal zip pocket",
+        "Reinforced shoulder straps"
+      ],
+      "sizes": ["One size"],
+      "defaultStock": 15,
+      "colors": [
+        { "name": "Sand", "hex": "#efe3cf" },
+        { "name": "Ink", "hex": "#121212" }
+      ]
+    },
+    {
+      "id": "oversized-crew-hoodie",
+      "name": "Oversized Crew Hoodie",
+      "category": "Hoodies",
+      "price": 2800,
+      "oldPrice": 3400,
+      "image": "/images/hoodie-alt.jpg",
+      "badge": "Low stock",
+      "description": "Our roomiest hoodie, cut extra oversized with dropped shoulders. Made for layering, long bus rides and cold hostels.",
+      "details": [
+        "400gsm brushed fleece",
+        "Extra-oversized unisex fit",
+        "Double-lined hood",
+        "Wide ribbed cuffs"
+      ],
+      "sizes": ["S", "M", "L", "XL"],
+      "defaultStock": 5,
+      "colors": [
+        { "name": "Ink", "hex": "#121212" },
+        { "name": "Charcoal", "hex": "#716a62" }
+      ]
+    },
+    {
+      "id": "campus-fit-tee",
+      "name": "Campus Fit Tee",
+      "category": "Tees",
+      "price": 1300,
+      "oldPrice": null,
+      "image": "/images/tee-model.jpg",
+      "badge": null,
+      "description": "A midweight everyday tee with a relaxed fit and a clean neckline. The kind of tee that survives a full semester on repeat.",
+      "details": [
+        "180gsm combed cotton",
+        "Relaxed unisex fit",
+        "Ribbed crew neck",
+        "Screen-printed in Nairobi"
+      ],
+      "sizes": ["S", "M", "L", "XL"],
+      "defaultStock": 12,
+      "colors": [
+        { "name": "Cream", "hex": "#f5f1e8" },
+        { "name": "Ink", "hex": "#121212" }
+      ]
+    },
+    {
+      "id": "campus-daypack",
+      "name": "Campus Daypack",
+      "category": "Backpacks",
+      "price": 2200,
+      "oldPrice": 2600,
+      "image": "/images/backpack.jpg",
+      "badge": "New",
+      "description": "A 22-litre daypack built for campus life. Padded laptop sleeve, quick-access front pocket and water-resistant fabric for surprise Nairobi rain.",
+      "details": [
+        "22L capacity",
+        "Padded 15-inch laptop sleeve",
+        "Water-resistant recycled polyester",
+        "Side bottle pockets"
+      ],
+      "sizes": ["One size"],
+      "defaultStock": 9,
+      "colors": [
+        { "name": "Ink", "hex": "#121212" },
+        { "name": "Charcoal", "hex": "#716a62" },
+        { "name": "Sand", "hex": "#efe3cf" }
+      ]
+    },
+    {
+      "id": "soko-notes-notebook",
+      "name": "Soko Notes Notebook",
+      "category": "Notebooks",
+      "price": 450,
+      "oldPrice": 550,
+      "image": "/images/notebook.jpg",
+      "badge": "New",
+      "description": "A5 dotted notebook for lecture notes, sketch ideas and everything in between. Lies flat, stays together, fits in any bag.",
+      "details": [
+        "A5 hardcover, 160 dotted pages",
+        "100gsm bleed-resistant paper",
+        "Lay-flat binding",
+        "Elastic closure and ribbon marker"
+      ],
+      "sizes": ["A5"],
+      "defaultStock": 30,
+      "colors": [
+        { "name": "Ink", "hex": "#121212" },
+        { "name": "Lime", "hex": "#d9f56b" },
+        { "name": "Sand", "hex": "#efe3cf" }
+      ]
+    },
+    {
+      "id": "weekend-hardshell-suitcase",
+      "name": "Weekend Hardshell Suitcase",
+      "category": "Suitcases",
+      "price": 5500,
+      "oldPrice": 6800,
+      "image": "/images/suitcase.jpg",
+      "badge": "Low stock",
+      "description": "A tough hardshell case for weekend trips home and end-of-semester moves. Lightweight, quiet spinner wheels and a TSA-friendly lock.",
+      "details": [
+        "Impact-resistant polycarbonate shell",
+        "360° spinner wheels",
+        "TSA combination lock",
+        "Cabin and medium sizes"
+      ],
+      "sizes": ["Cabin", "Medium"],
+      "defaultStock": 4,
+      "colors": [
+        { "name": "Cream", "hex": "#f5f1e8" },
+        { "name": "Ink", "hex": "#121212" },
+        { "name": "Lime", "hex": "#d9f56b" }
+      ]
+    }
+  ]
+}

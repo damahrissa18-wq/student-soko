@@ -2,7 +2,11 @@ import { useState } from 'react'
 import { filters, products } from '../data/products'
 import ProductCard from './ProductCard'
 
-export default function FeaturedProducts({ onAdd }) {
+export default function FeaturedProducts({
+  onQuickAdd,
+  getStock,
+  lowStockThreshold,
+}) {
   const [activeFilter, setActiveFilter] = useState('All')
 
   const visibleProducts =
@@ -58,7 +62,9 @@ export default function FeaturedProducts({ onAdd }) {
             <ProductCard
               key={product.id}
               product={product}
-              onAdd={onAdd}
+              onQuickAdd={onQuickAdd}
+              getStock={getStock}
+              lowStockThreshold={lowStockThreshold}
             />
           ))}
         </div>

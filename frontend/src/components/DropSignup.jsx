@@ -1,14 +1,36 @@
 import { useState } from 'react'
-import { ArrowRight, CheckCircle2, Mail } from 'lucide-react'
+import { ArrowRight, CheckCircle2, Loader2, Mail } from 'lucide-react'
+import { subscribeToDrop } from '../lib/api'
+import { trackEvent } from '../lib/analytics'
 
 export default function DropSignup() {
   const [email, setEmail] = useState('')
+  const [status, setStatus] = useState('idle')
+  const [message, setMessage] = useState('')
   const [submitted, setSubmitted] = useState(false)
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
-    if (!email.trim()) return
-    setSubmitted(true)
+
+    const trimmed = email.trim()
+    if (!trimmed || status === 'submitting') return
+
+    setStatus('submitting')
+    setMessage('')
+
+    try {
+      const data = await subscribeToDrop({
+        email: trimmed,
+        source: 'drop-signup',
+      })
+      setSubmitted(true)
+      setStatus('success')
+      setMessage(data.message)
+      trackEvent('newsletter_signup', { source: 'drop-signup' })
+    } catch (error) {
+      setStatus('error')
+      setMessage(error.message)
+    }
   }
 
   return (
@@ -52,8 +74,8 @@ export default function DropSignup() {
                     You're on the list.
                   </p>
                   <p className="mt-1 text-sm text-cream/75">
-                    Watch your inbox on Friday — we'll send the drop link before
-                    it goes public.
+                    {message ||
+                      "Watch your inbox on Friday — we'll send the drop link before it goes public."}
                   </p>
                 </div>
               </div>
@@ -73,26 +95,44 @@ export default function DropSignup() {
                       type="email"
                       required
                       value={email}
-                      onChange={(event) => setEmail(event.target.value)}
+                      onChange={(event) => {
+                        setEmail(event.target.value)
+                        if (status === 'error') setStatus('idle')
+                      }}
                       placeholder="you@student.ac.ke"
                       className="w-full rounded-full border border-cream/30 bg-cream/10 py-3.5 pl-11 pr-4 text-sm text-cream placeholder:text-cream/50 focus:border-lime focus:outline-none focus:ring-2 focus:ring-lime/60"
                     />
                   </div>
                   <button
                     type="submit"
-                    className="group inline-flex items-center justify-center gap-2 rounded-full bg-lime px-6 py-3.5 text-sm font-bold text-ink transition hover:bg-cream"
+                    disabled={status === 'submitting'}
+                    className="group inline-flex items-center justify-center gap-2 rounded-full bg-lime px-6 py-3.5 text-sm font-bold text-ink transition hover:bg-cream disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    Join the list
-                    <ArrowRight
-                      className="size-4 transition-transform group-hover:translate-x-1"
-                      aria-hidden="true"
-                    />
+                    {status === 'submitting' ? (
+                      <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <ArrowRight
+                        className="size-4 transition-transform group-hover:translate-x-1"
+                        aria-hidden="true"
+                      />
+                    )}
+                    {status === 'submitting' ? 'Joining...' : 'Join the list'}
                   </button>
                 </div>
               </form>
             )}
+
+            {status === 'error' && message && (
+              <p
+                role="alert"
+                className="mt-3 rounded-xl bg-ink/25 px-3.5 py-2.5 text-[11px] font-medium text-cream"
+              >
+                {message}
+              </p>
+            )}
+
             <p className="mt-3 text-[11px] text-cream/60">
-              Join 1,800+ students across 48 campuses.
+              One email a week. Unsubscribe in one click.
             </p>
           </div>
         </div>

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import {
   ArrowRight,
   Minus,
@@ -9,18 +10,17 @@ import {
   X,
 } from 'lucide-react'
 import { formatPrice } from '../data/products'
-
-const FREE_DELIVERY_AT = 2000
+import { FREE_DELIVERY_AT } from '../data/shop'
 
 export default function CartDrawer({
   open,
   items,
   onClose,
+  onCheckout,
   onUpdateQty,
   onRemove,
+  getStock,
 }) {
-  const [checkoutNotice, setCheckoutNotice] = useState(false)
-
   useEffect(() => {
     if (!open) return
 
@@ -89,14 +89,14 @@ export default function CartDrawer({
               The next drop won't wait around. Go find something that fits your
               campus era.
             </p>
-            <a
-              href="#shop"
+            <Link
+              to="/#shop"
               onClick={onClose}
               className="mt-6 inline-flex items-center gap-2 rounded-full bg-flame px-6 py-3 text-sm font-semibold text-cream transition hover:bg-ink"
             >
               Shop the drop
               <ArrowRight className="size-4" aria-hidden="true" />
-            </a>
+            </Link>
           </div>
         ) : (
           <>
@@ -126,63 +126,88 @@ export default function CartDrawer({
             </div>
 
             <ul className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
-              {items.map(({ product, qty }) => (
-                <li key={product.id} className="flex gap-3">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="h-24 w-20 shrink-0 rounded-xl object-cover"
-                    loading="lazy"
-                  />
-                  <div className="flex min-w-0 flex-1 flex-col">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="font-display text-sm font-semibold leading-snug">
-                          {product.name}
-                        </p>
-                        <p className="mt-0.5 text-[11px] text-smoke">
-                          {product.category} · One size
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => onRemove(product.id)}
-                        className="grid size-7 shrink-0 place-items-center rounded-full text-smoke transition hover:bg-ink/5 hover:text-flame"
-                        aria-label={`Remove ${product.name} from cart`}
-                      >
-                        <Trash2 className="size-3.5" aria-hidden="true" />
-                      </button>
-                    </div>
+              {items.map((item) => {
+                const { key, product, qty, size, color } = item
+                const available = getStock?.(product.id, size) ?? qty
+                const variantLabel =
+                  product.sizes.length === 1 && size === product.sizes[0]
+                    ? size
+                    : `Size ${size}`
 
-                    <div className="mt-auto flex items-center justify-between pt-2">
-                      <div className="flex items-center rounded-full border border-ink/15">
+                return (
+                  <li key={key} className="flex gap-3">
+                    <Link
+                      to={`/product/${product.id}`}
+                      onClick={onClose}
+                      className="shrink-0"
+                    >
+                      <img
+                        src={product.image}
+                        alt={product.name}
+                        className="h-24 w-20 rounded-xl object-cover"
+                        loading="lazy"
+                      />
+                    </Link>
+                    <div className="flex min-w-0 flex-1 flex-col">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <Link
+                            to={`/product/${product.id}`}
+                            onClick={onClose}
+                            className="font-display text-sm font-semibold leading-snug transition hover:text-flame"
+                          >
+                            {product.name}
+                          </Link>
+                          <p className="mt-0.5 text-[11px] text-smoke">
+                            {variantLabel} · {color.name}
+                          </p>
+                          {qty >= available && available > 0 && (
+                            <p className="mt-0.5 text-[10px] font-semibold text-flame">
+                              Max stock in cart
+                            </p>
+                          )}
+                        </div>
                         <button
                           type="button"
-                          onClick={() => onUpdateQty(product.id, -1)}
-                          className="grid size-7 place-items-center rounded-full transition hover:bg-ink hover:text-cream"
-                          aria-label={`Decrease quantity of ${product.name}`}
+                          onClick={() => onRemove(key)}
+                          className="grid size-7 shrink-0 place-items-center rounded-full text-smoke transition hover:bg-ink/5 hover:text-flame"
+                          aria-label={`Remove ${product.name}, ${size}, ${color.name} from cart`}
                         >
-                          <Minus className="size-3" aria-hidden="true" />
-                        </button>
-                        <span className="w-6 text-center text-xs font-semibold">
-                          {qty}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => onUpdateQty(product.id, 1)}
-                          className="grid size-7 place-items-center rounded-full transition hover:bg-ink hover:text-cream"
-                          aria-label={`Increase quantity of ${product.name}`}
-                        >
-                          <Plus className="size-3" aria-hidden="true" />
+                          <Trash2 className="size-3.5" aria-hidden="true" />
                         </button>
                       </div>
-                      <p className="font-display text-sm font-bold">
-                        {formatPrice(product.price * qty)}
-                      </p>
+
+                      <div className="mt-auto flex items-center justify-between pt-2">
+                        <div className="flex items-center rounded-full border border-ink/15">
+                          <button
+                            type="button"
+                            onClick={() => onUpdateQty(key, -1)}
+                            className="grid size-7 place-items-center rounded-full transition hover:bg-ink hover:text-cream"
+                            aria-label={`Decrease quantity of ${product.name}`}
+                          >
+                            <Minus className="size-3" aria-hidden="true" />
+                          </button>
+                          <span className="w-6 text-center text-xs font-semibold">
+                            {qty}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => onUpdateQty(key, 1)}
+                            disabled={qty >= available}
+                            className="grid size-7 place-items-center rounded-full transition hover:bg-ink hover:text-cream disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-ink"
+                            aria-label={`Increase quantity of ${product.name}`}
+                          >
+                            <Plus className="size-3" aria-hidden="true" />
+                          </button>
+                        </div>
+                        <p className="font-display text-sm font-bold">
+                          {formatPrice(product.price * qty)}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                )
+              })}
             </ul>
 
             <div className="border-t border-ink/10 px-5 py-5">
@@ -198,22 +223,12 @@ export default function CartDrawer({
 
               <button
                 type="button"
-                onClick={() => setCheckoutNotice(true)}
+                onClick={onCheckout}
                 className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-ink py-3.5 text-sm font-semibold text-cream transition hover:bg-flame"
               >
                 Checkout
                 <ArrowRight className="size-4" aria-hidden="true" />
               </button>
-
-              {checkoutNotice && (
-                <p
-                  className="mt-3 rounded-xl bg-lime/50 px-3 py-2.5 text-center text-[11px] font-medium text-ink"
-                  role="status"
-                >
-                  Checkout launches with the next build. Your cart is saved for
-                  this session.
-                </p>
-              )}
 
               <button
                 type="button"

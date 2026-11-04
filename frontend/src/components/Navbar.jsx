@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ArrowRight, Menu, ShoppingBag, Sparkles, X } from 'lucide-react'
 import Logo from './Logo'
+import { siteConfig } from '../config/site'
 
 const links = [
-  { label: 'Shop', href: '#shop' },
-  { label: 'Collections', href: '#collections' },
-  { label: 'Why Soko', href: '#why' },
-  { label: 'Reviews', href: '#reviews' },
+  { label: 'Shop', to: '/#shop' },
+  { label: 'Collections', to: '/#collections' },
+  { label: 'Why Soko', to: '/#why' },
+  { label: 'Reviews', to: '/#reviews' },
+  { label: 'Track order', to: '/track' },
 ]
 
 export default function Navbar({ cartCount, onOpenCart }) {
@@ -46,16 +49,16 @@ export default function Navbar({ cartCount, onOpenCart }) {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:h-20 lg:px-8">
           <Logo />
 
-          <nav className="hidden items-center gap-8 lg:flex" aria-label="Main">
+          <nav className="hidden items-center gap-7 lg:flex" aria-label="Main">
             {links.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
+              <Link
+                key={link.to}
+                to={link.to}
                 className="group relative text-sm font-medium text-ink/65 transition-colors hover:text-ink"
               >
                 {link.label}
                 <span className="absolute -bottom-1.5 left-0 h-0.5 w-0 rounded-full bg-flame transition-all duration-300 group-hover:w-full" />
-              </a>
+              </Link>
             ))}
           </nav>
 
@@ -74,13 +77,13 @@ export default function Navbar({ cartCount, onOpenCart }) {
               )}
             </button>
 
-            <a
-              href="#shop"
+            <Link
+              to="/#shop"
               className="hidden items-center gap-2 rounded-full bg-ink px-5 py-3 text-sm font-semibold text-cream transition hover:bg-flame sm:inline-flex"
             >
               Shop the drop
               <ArrowRight className="size-4" aria-hidden="true" />
-            </a>
+            </Link>
 
             <button
               type="button"
@@ -114,9 +117,9 @@ export default function Navbar({ cartCount, onOpenCart }) {
             aria-label="Mobile"
           >
             {links.map((link, index) => (
-              <a
-                key={link.href}
-                href={link.href}
+              <Link
+                key={link.to}
+                to={link.to}
                 onClick={() => setMenuOpen(false)}
                 className="group flex items-center justify-between border-b border-ink/10 py-4"
               >
@@ -126,22 +129,22 @@ export default function Navbar({ cartCount, onOpenCart }) {
                 <span className="font-display text-xs font-medium text-smoke">
                   0{index + 1}
                 </span>
-              </a>
+              </Link>
             ))}
           </nav>
 
           <div className="p-6">
-            <a
-              href="#shop"
+            <Link
+              to="/#shop"
               onClick={() => setMenuOpen(false)}
               className="flex w-full items-center justify-center gap-2 rounded-full bg-flame py-4 text-sm font-semibold text-cream transition hover:bg-ink"
             >
               Shop the drop
               <ArrowRight className="size-4" aria-hidden="true" />
-            </a>
+            </Link>
             <div className="mt-5 flex items-center justify-between text-xs text-smoke">
               <span>Nairobi, Kenya</span>
-              <span>@studentsoko</span>
+              <span>{siteConfig.whatsappNumber ? 'WhatsApp support' : 'M-Pesa checkout'}</span>
             </div>
           </div>
         </div>

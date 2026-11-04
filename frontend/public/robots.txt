@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /track
+Disallow: /unsubscribe
+
+Sitemap: https://studentsoko.co.ke/sitemap.xml

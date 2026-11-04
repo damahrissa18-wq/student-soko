@@ -1,9 +1,10 @@
+import { Link } from 'react-router-dom'
 import { ShoppingBag } from 'lucide-react'
 
 export default function Logo({ onClick }) {
   return (
-    <a
-      href="#top"
+    <Link
+      to="/"
       onClick={onClick}
       className="group flex shrink-0 items-center gap-2.5"
       aria-label="StudentSoko home"
@@ -14,6 +15,6 @@ export default function Logo({ onClick }) {
       <span className="font-display text-xl font-bold tracking-tight">
         Student<span className="text-flame">Soko</span>
       </span>
-    </a>
+    </Link>
   )
 }

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { ArrowUpRight } from 'lucide-react'
 import { categories } from '../data/products'
 
@@ -28,9 +29,9 @@ export default function Categories() {
 
         <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-4 lg:auto-rows-[200px] lg:grid-cols-4">
           {categories.map((category) => (
-            <a
+            <Link
               key={category.name}
-              href="#shop"
+              to={category.href || '/#shop'}
               className={`group relative overflow-hidden rounded-3xl bg-sand focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-flame ${category.className}`}
             >
               <img
@@ -57,7 +58,7 @@ export default function Categories() {
                   <ArrowUpRight className="size-4" aria-hidden="true" />
                 </span>
               </div>
-            </a>
+            </Link>
           ))}
         </div>
       </div>

@@ -1,99 +1,85 @@
-export const products = [
-  {
-    id: 'campus-classic-hoodie',
-    name: 'Campus Classic Hoodie',
-    category: 'Hoodies',
-    price: 2500,
-    oldPrice: 3200,
-    image: '/images/hoodie.jpg',
-    badge: 'Best seller',
-    colors: ['#121212', '#d9f56b', '#efe3cf'],
-  },
-  {
-    id: 'soko-heavy-tee',
-    name: 'Soko Heavy Tee',
-    category: 'Tees',
-    price: 1200,
-    oldPrice: null,
-    image: '/images/white-tee.jpg',
-    badge: 'New',
-    colors: ['#f5f1e8', '#121212', '#ff4d1c'],
-  },
-  {
-    id: 'night-class-cap',
-    name: 'Night Class Cap',
-    category: 'Caps',
-    price: 900,
-    oldPrice: 1100,
-    image: '/images/cap.jpg',
-    badge: null,
-    colors: ['#121212', '#efe3cf', '#d9f56b'],
-  },
-  {
-    id: 'lecture-hall-tote',
-    name: 'Lecture Hall Tote',
-    category: 'Bags',
-    price: 1100,
-    oldPrice: null,
-    image: '/images/tote.jpg',
-    badge: null,
-    colors: ['#efe3cf', '#121212'],
-  },
-  {
-    id: 'oversized-crew-hoodie',
-    name: 'Oversized Crew Hoodie',
-    category: 'Hoodies',
-    price: 2800,
-    oldPrice: 3400,
-    image: '/images/hoodie-alt.jpg',
-    badge: 'Low stock',
-    colors: ['#121212', '#716a62'],
-  },
-  {
-    id: 'campus-fit-tee',
-    name: 'Campus Fit Tee',
-    category: 'Tees',
-    price: 1300,
-    oldPrice: null,
-    image: '/images/tee-model.jpg',
-    badge: null,
-    colors: ['#f5f1e8', '#121212'],
-  },
-]
+import catalogData from '../../../shared/products.json'
 
-export const categories = [
+// The storefront and the API both read shared/products.json so prices,
+// variants and default stock stay in sync.
+export const products = catalogData.products
+
+const productById = new Map(products.map((product) => [product.id, product]))
+
+export function getProductById(id) {
+  return productById.get(id) ?? null
+}
+
+const categoryTiles = [
   {
     name: 'Hoodies',
-    count: '12 styles',
     image: '/images/hoodie.jpg',
     className: 'col-span-2 min-h-[280px] lg:col-span-2 lg:row-span-2 lg:min-h-0',
   },
   {
     name: 'Tees',
-    count: '18 styles',
     image: '/images/tees.jpg',
     className: 'min-h-[180px] lg:min-h-0',
   },
   {
     name: 'Caps',
-    count: '9 styles',
     image: '/images/cap.jpg',
     className: 'min-h-[180px] lg:min-h-0',
   },
   {
-    name: 'Bags & totes',
-    count: '6 styles',
+    name: 'Bags',
+    countLabel: 'Bags & totes',
     image: '/images/tote.jpg',
     className: 'min-h-[180px] lg:min-h-0',
   },
   {
+    name: 'Backpacks',
+    image: '/images/backpack.jpg',
+    className: 'min-h-[180px] lg:min-h-0',
+  },
+  {
+    name: 'Notebooks',
+    image: '/images/notebook.jpg',
+    className: 'col-span-2 min-h-[180px] lg:col-span-2 lg:min-h-0',
+  },
+  {
+    name: 'Suitcases',
+    image: '/images/suitcase.jpg',
+    className: 'min-h-[180px] lg:min-h-0',
+  },
+  {
     name: 'Fresh fits',
-    count: 'Shop the look',
     image: '/images/tee-model.jpg',
     className: 'min-h-[180px] lg:min-h-0',
+    href: '/product/campus-fit-tee',
+    countLabel: 'Shop the look',
   },
 ]
 
-export const filters = ['All', 'Hoodies', 'Tees', 'Caps', 'Bags']
+export const categories = categoryTiles.map((tile) => {
+  if (tile.countLabel) return { ...tile, count: tile.countLabel }
 
-export const formatPrice = (value) => `KSh ${value.toLocaleString('en-KE')}`
+  const count = products.filter(
+    (product) => product.category === tile.name,
+  ).length
+
+  return {
+    ...tile,
+    count: `${count} ${count === 1 ? 'style' : 'styles'}`,
+  }
+})
+
+export const filters = [
+  'All',
+  'Hoodies',
+  'Tees',
+  'Caps',
+  'Bags',
+  'Backpacks',
+  'Notebooks',
+  'Suitcases',
+]
+
+export const formatPrice = (value) => `KSh ${Number(value).toLocaleString('en-KE')}`
+
+export const stockKey = (productId, size) => `${productId}::${size}`

@@ -1,5 +1,7 @@
-import { Mail } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Mail, MessageCircle } from 'lucide-react'
 import Logo from './Logo'
+import { siteConfig, whatsappUrl } from '../config/site'
 
 const year = new Date().getFullYear()
 
@@ -7,41 +9,39 @@ const columns = [
   {
     title: 'Shop',
     links: [
-      { label: 'Hoodies', href: '#shop' },
-      { label: 'Tees', href: '#shop' },
-      { label: 'Caps', href: '#shop' },
-      { label: 'Bags & totes', href: '#shop' },
-      { label: 'Gift cards', href: '#collections' },
+      { label: 'Hoodies', to: '/#shop' },
+      { label: 'Tees', to: '/#shop' },
+      { label: 'Caps', to: '/#shop' },
+      { label: 'Backpacks', to: '/#shop' },
+      { label: 'Notebooks', to: '/#shop' },
+      { label: 'Suitcases', to: '/#shop' },
     ],
   },
   {
     title: 'Company',
     links: [
-      { label: 'Our story', href: '#why' },
-      { label: 'Campus reps', href: '#why' },
-      { label: 'Pop-ups', href: '#collections' },
-      { label: 'Reviews', href: '#reviews' },
+      { label: 'Our story', to: '/#why' },
+      { label: 'Reviews', to: '/#reviews' },
+      { label: 'Size guide', to: '/size-guide' },
+      { label: 'Privacy', to: '/privacy' },
+      { label: 'Terms', to: '/terms' },
     ],
   },
   {
     title: 'Help',
     links: [
-      { label: 'Delivery & pickup', href: '#why' },
-      { label: 'Size guide', href: '#shop' },
-      { label: 'Returns & swaps', href: '#why' },
-      { label: 'Contact us', href: 'mailto:hello@studentsoko.co.ke' },
+      { label: 'Track order', to: '/track' },
+      { label: 'Delivery & pickup', to: '/delivery' },
+      { label: 'Returns & swaps', to: '/returns' },
+      { label: 'FAQ', to: '/faq' },
+      { label: 'Contact us', href: `mailto:${siteConfig.email}` },
     ],
   },
 ]
 
-const socials = [
-  { label: 'Instagram', short: 'IG', href: 'https://instagram.com' },
-  { label: 'X', short: 'X', href: 'https://x.com' },
-  { label: 'YouTube', short: 'YT', href: 'https://youtube.com' },
-  { label: 'Facebook', short: 'FB', href: 'https://facebook.com' },
-]
-
 export default function Footer() {
+  const whatsapp = whatsappUrl()
+
   return (
     <footer className="bg-ink text-cream">
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
@@ -53,28 +53,43 @@ export default function Footer() {
               printed and delivered in Nairobi.
             </p>
 
-            <div className="mt-6 flex items-center gap-2">
-              {socials.map(({ label, short, href }) => (
+            {siteConfig.socials.length > 0 && (
+              <div className="mt-6 flex flex-wrap items-center gap-2">
+                {siteConfig.socials.map(({ label, short, href }) => (
+                  <a
+                    key={label}
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`StudentSoko on ${label}`}
+                    className="grid size-9 place-items-center rounded-full border border-white/15 font-display text-[10px] font-bold text-cream/70 transition hover:border-lime hover:bg-lime hover:text-ink"
+                  >
+                    {short}
+                  </a>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-5 flex flex-col gap-2">
+              <a
+                href={`mailto:${siteConfig.email}`}
+                className="inline-flex items-center gap-2 text-xs text-cream/55 transition hover:text-lime"
+              >
+                <Mail className="size-4" aria-hidden="true" />
+                {siteConfig.email}
+              </a>
+              {whatsapp && (
                 <a
-                  key={label}
-                  href={href}
+                  href={whatsapp}
                   target="_blank"
                   rel="noreferrer"
-                  aria-label={`StudentSoko on ${label}`}
-                  className="grid size-9 place-items-center rounded-full border border-white/15 font-display text-[10px] font-bold text-cream/70 transition hover:border-lime hover:bg-lime hover:text-ink"
+                  className="inline-flex items-center gap-2 text-xs text-cream/55 transition hover:text-lime"
                 >
-                  {short}
+                  <MessageCircle className="size-4" aria-hidden="true" />
+                  WhatsApp support
                 </a>
-              ))}
+              )}
             </div>
-
-            <a
-              href="mailto:hello@studentsoko.co.ke"
-              className="mt-5 inline-flex items-center gap-2 text-xs text-cream/55 transition hover:text-lime"
-            >
-              <Mail className="size-4" aria-hidden="true" />
-              hello@studentsoko.co.ke
-            </a>
           </div>
 
           {columns.map((column) => (
@@ -85,12 +100,21 @@ export default function Footer() {
               <ul className="mt-4 space-y-2.5">
                 {column.links.map((link) => (
                   <li key={link.label}>
-                    <a
-                      href={link.href}
-                      className="text-sm text-cream/65 transition hover:text-lime"
-                    >
-                      {link.label}
-                    </a>
+                    {link.href ? (
+                      <a
+                        href={link.href}
+                        className="text-sm text-cream/65 transition hover:text-lime"
+                      >
+                        {link.label}
+                      </a>
+                    ) : (
+                      <Link
+                        to={link.to}
+                        className="text-sm text-cream/65 transition hover:text-lime"
+                      >
+                        {link.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -101,22 +125,29 @@ export default function Footer() {
         <div className="mt-12 flex flex-col gap-5 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-cream/40">
-              We accept
+              Checkout
             </span>
-            {['M-PESA', 'VISA', 'Mastercard', 'Cash on delivery'].map(
-              (method) => (
-                <span
-                  key={method}
-                  className="rounded-md border border-white/15 px-2 py-1 text-[10px] font-semibold text-cream/60"
-                >
-                  {method}
-                </span>
-              ),
-            )}
+            <span className="rounded-md border border-white/15 px-2 py-1 text-[10px] font-semibold text-cream/60">
+              M-PESA
+            </span>
+            <span className="text-[10px] text-cream/35">
+              Secure STK Push · No card details stored
+            </span>
           </div>
-          <p className="text-[11px] text-cream/40">
-            © {year} StudentSoko · Made in Nairobi, Kenya
-          </p>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-cream/40">
+            <Link to="/delivery" className="transition hover:text-lime">
+              Delivery
+            </Link>
+            <Link to="/returns" className="transition hover:text-lime">
+              Returns
+            </Link>
+            <Link to="/privacy" className="transition hover:text-lime">
+              Privacy
+            </Link>
+            <span>
+              © {year} StudentSoko · Made in Nairobi, Kenya
+            </span>
+          </div>
         </div>
       </div>
     </footer>
