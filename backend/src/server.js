@@ -1,12 +1,25 @@
 import cors from 'cors'
 import express from 'express'
 import { config } from './config.js'
+import {
+  connectToDatabase,
+  describeDatabase,
+  disconnectFromDatabase,
+  isDatabaseConnected,
+} from './db.js'
 import adminRouter from './routes/admin.js'
 import catalogRouter from './routes/catalog.js'
 import mpesaRouter from './routes/mpesa.js'
 import newsletterRouter from './routes/newsletter.js'
 import ordersRouter from './routes/orders.js'
-import { startAbandonedCartSweeper } from './services/abandonedCarts.js'
+import {
+  startAbandonedCartSweeper,
+  stopAbandonedCartSweeper,
+} from './services/abandonedCarts.js'
+import { ensureCatalogStock } from './store/inventory.js'
+import { Order } from './models/order.js'
+import { InventoryItem } from './models/inventoryItem.js'
+import { Subscriber } from './models/subscriber.js'
 
 const app = express()
 
@@ -17,6 +30,8 @@ app.use(express.json({ limit: '100kb' }))
 app.get('/api/health', (_request, response) => {
   response.json({
     ok: true,
+    database: isDatabaseConnected() ? 'connected' : 'disconnected',
+    databaseName: config.mongo.dbName,
     emailMode: config.email.mode,
     mpesaMode: config.mpesa.mock ? 'mock' : config.mpesa.environment,
     adminConfigured: Boolean(config.admin.token),
@@ -51,9 +66,10 @@ app.use((error, _request, response, _next) => {
     .json({ error: 'Something went wrong. Please try again.' })
 })
 
-app.listen(config.port, () => {
+function printBanner() {
   console.log('')
   console.log(`StudentsSoko API listening on http://localhost:${config.port}`)
+  console.log(`  Database: ${describeDatabase()}`)
   console.log(
     `  Email:  ${
       config.email.mode === 'resend'
@@ -81,6 +97,45 @@ app.listen(config.port, () => {
     `  Site:   ${config.siteUrl} (used in email links; set SITE_URL in production)`,
   )
   console.log('')
-})
+}
 
-startAbandonedCartSweeper()
+async function start() {
+  try {
+    await connectToDatabase()
+    await Promise.all([Order.init(), InventoryItem.init(), Subscriber.init()])
+    await ensureCatalogStock()
+  } catch (error) {
+    console.error('[startup] Could not start the API:', error.message)
+    process.exitCode = 1
+    return
+  }
+
+  const server = app.listen(config.port, printBanner)
+  startAbandonedCartSweeper()
+
+  let shuttingDown = false
+
+  async function shutdown(signal) {
+    if (shuttingDown) return
+    shuttingDown = true
+    console.log(`[api] ${signal} received, shutting down...`)
+
+    stopAbandonedCartSweeper()
+
+    const forceExit = setTimeout(() => process.exit(1), 10_000)
+    forceExit.unref()
+
+    server.close(async () => {
+      try {
+        await disconnectFromDatabase()
+      } finally {
+        process.exit(0)
+      }
+    })
+  }
+
+  process.on('SIGINT', () => shutdown('SIGINT'))
+  process.on('SIGTERM', () => shutdown('SIGTERM'))
+}
+
+start()

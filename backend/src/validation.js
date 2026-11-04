@@ -22,7 +22,7 @@ export function normalizeEmail(value) {
   return EMAIL_PATTERN.test(email) && email.length <= 254 ? email : null
 }
 
-export function validateCheckout(payload) {
+export async function validateCheckout(payload) {
   const fields = {}
   const rawCustomer = payload?.customer ?? {}
 
@@ -107,7 +107,7 @@ export function validateCheckout(payload) {
   }
 
   for (const item of mergedItems.values()) {
-    const available = getStock(item.id, item.size)
+    const available = await getStock(item.id, item.size)
 
     if (available <= 0) {
       fields.items = `${item.product.name} in ${item.size} is sold out.`

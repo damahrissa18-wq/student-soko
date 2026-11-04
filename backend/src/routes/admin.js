@@ -61,8 +61,9 @@ router.get('/ping', (_request, response) => {
   response.json({ ok: true })
 })
 
-router.get('/overview', (_request, response) => {
-  const orders = getAllOrders()
+router.get('/overview', async (_request, response) => {
+  const orders = await getAllOrders()
+  const lowStock = await getLowStockVariants()
   const paidOrders = orders.filter((order) => order.status === 'paid')
   const revenue = paidOrders.reduce(
     (sum, order) => sum + Number(order.total || 0),
@@ -82,19 +83,19 @@ router.get('/overview', (_request, response) => {
           order.status === 'paid' &&
           ['unfulfilled', 'processing'].includes(order.fulfillmentStatus),
       ).length,
-      subscribers: countActiveSubscribers(),
-      lowStock: getLowStockVariants().length,
+      subscribers: await countActiveSubscribers(),
+      lowStock: lowStock.length,
     },
-    lowStock: getLowStockVariants().slice(0, 12),
+    lowStock: lowStock.slice(0, 12),
   })
 })
 
-router.get('/orders', (request, response) => {
+router.get('/orders', async (request, response) => {
   const status = String(request.query.status ?? '').trim()
   const fulfillment = String(request.query.fulfillment ?? '').trim()
   const query = String(request.query.q ?? '').trim().toLowerCase()
 
-  let orders = getAllOrders()
+  let orders = await getAllOrders()
 
   if (status) {
     orders = orders.filter((order) => order.status === status)
@@ -128,7 +129,7 @@ router.get('/orders', (request, response) => {
 })
 
 router.patch('/orders/:id', async (request, response) => {
-  const order = getOrderById(request.params.id)
+  const order = await getOrderById(request.params.id)
   if (!order) {
     return response.status(404).json({ error: 'Order not found.' })
   }
@@ -163,7 +164,7 @@ router.patch('/orders/:id', async (request, response) => {
     return response.json({ order: toAdminOrder(order), email: null })
   }
 
-  const updated = updateOrder(order.id, (draft) => {
+  const updated = await updateOrder(order.id, (draft) => {
     draft.fulfillmentStatus = nextStatus
     draft.trackingNumber = nextTracking
     draft.fulfillmentUpdatedAt = new Date().toISOString()
@@ -193,21 +194,21 @@ router.patch('/orders/:id', async (request, response) => {
   }
 
   return response.json({
-    order: toAdminOrder(getOrderById(order.id)),
+    order: toAdminOrder(await getOrderById(order.id)),
     email,
   })
 })
 
-router.get('/inventory', (_request, response) => {
+router.get('/inventory', async (_request, response) => {
   response.json({
-    inventory: getInventorySnapshot(),
+    inventory: await getInventorySnapshot(),
     lowStockThreshold: config.inventory.lowStockThreshold,
   })
 })
 
-router.patch('/inventory', (request, response) => {
+router.patch('/inventory', async (request, response) => {
   const { productId, size, stock } = request.body ?? {}
-  const result = setStock(productId, size, stock)
+  const result = await setStock(productId, size, stock)
 
   if (!result.ok) {
     return response.status(400).json({ error: result.error })
@@ -215,14 +216,14 @@ router.patch('/inventory', (request, response) => {
 
   return response.json({
     item: result,
-    inventory: getInventorySnapshot(),
+    inventory: await getInventorySnapshot(),
   })
 })
 
-router.get('/subscribers', (_request, response) => {
+router.get('/subscribers', async (_request, response) => {
   response.json({
-    subscribers: listSubscribers(),
-    active: countActiveSubscribers(),
+    subscribers: await listSubscribers(),
+    active: await countActiveSubscribers(),
   })
 })
 

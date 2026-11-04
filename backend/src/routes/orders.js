@@ -71,8 +71,8 @@ function summarizeEmail(result) {
   }
 }
 
-function getAuthorizedOrder(request, response) {
-  const order = getOrderById(request.params.id)
+async function getAuthorizedOrder(request, response) {
+  const order = await getOrderById(request.params.id)
 
   if (!order || !hasValidToken(order, request.get('x-order-token'))) {
     response.status(404).json({ error: 'Order not found.' })
@@ -89,7 +89,7 @@ function scheduleMockPayment(orderId) {
   const timer = setTimeout(async () => {
     mockTimers.delete(orderId)
 
-    const order = getOrderById(orderId)
+    const order = await getOrderById(orderId)
     if (!order || order.status === 'paid') return
 
     const receiptNumber = `MOCK${Math.random()
@@ -120,7 +120,7 @@ function scheduleMockPayment(orderId) {
 async function startPayment(order) {
   const result = await initiateStkPush(order)
 
-  updateOrder(order.id, (draft) => {
+  await updateOrder(order.id, (draft) => {
     draft.status = 'pending_payment'
     draft.payment.status = 'pending'
     draft.payment.mode = result.mode
@@ -137,7 +137,7 @@ async function startPayment(order) {
 }
 
 router.post('/', async (request, response) => {
-  const { fields, value } = validateCheckout(request.body)
+  const { fields, value } = await validateCheckout(request.body)
 
   if (!value) {
     return response.status(400).json({
@@ -152,7 +152,7 @@ router.post('/', async (request, response) => {
     subtotal >= config.delivery.freeAt ? 0 : config.delivery.fee
   const total = subtotal + deliveryFee
 
-  let order = createOrder({
+  let order = await createOrder({
     customer: value.customer,
     items,
     subtotal,
@@ -183,7 +183,7 @@ router.post('/', async (request, response) => {
       error.message,
     )
 
-    order = updateOrder(order.id, (draft) => {
+    order = await updateOrder(order.id, (draft) => {
       draft.status = 'payment_failed'
       draft.payment.status = 'failed'
       draft.payment.mode = config.mpesa.mock ? 'mock' : 'mpesa'
@@ -192,7 +192,7 @@ router.post('/', async (request, response) => {
     })
   }
 
-  order = getOrderById(order.id)
+  order = await getOrderById(order.id)
 
   return response.status(201).json({
     order: toPublicOrder(order),
@@ -208,7 +208,7 @@ router.post('/', async (request, response) => {
   })
 })
 
-router.post('/lookup', (request, response) => {
+router.post('/lookup', async (request, response) => {
   const ip = request.ip || request.socket?.remoteAddress || 'unknown'
 
   if (!allowLookup(ip)) {
@@ -232,7 +232,7 @@ router.post('/lookup', (request, response) => {
     })
   }
 
-  const order = getOrderById(orderId)
+  const order = await getOrderById(orderId)
 
   if (!order || order.customer.email !== email) {
     return response.status(404).json({
@@ -247,15 +247,15 @@ router.post('/lookup', (request, response) => {
   })
 })
 
-router.get('/:id', (request, response) => {
-  const order = getAuthorizedOrder(request, response)
+router.get('/:id', async (request, response) => {
+  const order = await getAuthorizedOrder(request, response)
   if (!order) return
 
   return response.json({ order: toPublicOrder(order) })
 })
 
 router.post('/:id/pay', async (request, response) => {
-  const order = getAuthorizedOrder(request, response)
+  const order = await getAuthorizedOrder(request, response)
   if (!order) return
 
   if (order.status === 'paid') {
@@ -282,19 +282,19 @@ router.post('/:id/pay', async (request, response) => {
   }
 
   if (phone !== order.customer.phone) {
-    updateOrder(order.id, (draft) => {
+    await updateOrder(order.id, (draft) => {
       draft.customer.phone = phone
       draft.payment.phoneNumber = phone
     })
   }
 
-  const freshOrder = getOrderById(order.id)
+  const freshOrder = await getOrderById(order.id)
 
   try {
     const result = await startPayment(freshOrder)
 
     return response.json({
-      order: toPublicOrder(getOrderById(order.id)),
+      order: toPublicOrder(await getOrderById(order.id)),
       payment: {
         started: true,
         mode: result.mode,
@@ -307,7 +307,7 @@ router.post('/:id/pay', async (request, response) => {
       error.message,
     )
 
-    updateOrder(order.id, (draft) => {
+    await updateOrder(order.id, (draft) => {
       draft.status = 'payment_failed'
       draft.payment.status = 'failed'
       draft.payment.message =
@@ -316,7 +316,7 @@ router.post('/:id/pay', async (request, response) => {
 
     return response.status(502).json({
       error: 'We could not start the M-Pesa payment. Please try again.',
-      order: toPublicOrder(getOrderById(order.id)),
+      order: toPublicOrder(await getOrderById(order.id)),
     })
   }
 })

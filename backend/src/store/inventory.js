@@ -1,85 +1,77 @@
-import fs from 'node:fs'
-import path from 'node:path'
 import { config } from '../config.js'
 import { catalog, findProduct, findSize, stockKey } from '../catalog.js'
+import { InventoryItem } from '../models/inventoryItem.js'
 
-const stock = new Map()
-
-loadInventory()
-ensureCatalogStock()
-
-function loadInventory() {
-  try {
-    const raw = fs.readFileSync(config.inventoryFile, 'utf8')
-    const saved = JSON.parse(raw)
-
-    if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return
-
-    for (const [key, value] of Object.entries(saved)) {
-      const quantity = Number(value)
-      if (Number.isInteger(quantity) && quantity >= 0) {
-        stock.set(key, quantity)
-      }
-    }
-
-    console.log(
-      `[inventory] Loaded ${stock.size} variant stock level(s) from ${config.inventoryFile}`,
-    )
-  } catch (error) {
-    if (error.code !== 'ENOENT') {
-      console.error('[inventory] Could not read saved stock:', error.message)
-    }
-  }
+function toStockMap(documents) {
+  return documents.reduce((map, document) => {
+    map[document.key] = document.stock
+    return map
+  }, {})
 }
 
-function persistInventory() {
-  try {
-    fs.mkdirSync(path.dirname(config.inventoryFile), { recursive: true })
-    const temporaryFile = `${config.inventoryFile}.tmp`
-    fs.writeFileSync(
-      temporaryFile,
-      JSON.stringify(Object.fromEntries(stock), null, 2),
-      'utf8',
-    )
-    fs.renameSync(temporaryFile, config.inventoryFile)
-  } catch (error) {
-    console.error('[inventory] Could not save stock:', error.message)
-  }
+async function loadStockDocuments() {
+  return InventoryItem.find({}).select({ _id: 0, __v: 0 }).lean()
 }
 
-function ensureCatalogStock() {
-  let added = 0
+// Called once at startup. Every product/size in the shared catalog gets a row;
+// existing rows are never overwritten, so live stock survives restarts.
+export async function ensureCatalogStock() {
+  if (catalog.length === 0) return
+
+  const operations = []
 
   for (const product of catalog) {
     for (const size of product.sizes) {
-      const key = stockKey(product.id, size)
-      if (!stock.has(key)) {
-        stock.set(key, Number(product.defaultStock) || 0)
-        added += 1
-      }
+      operations.push({
+        updateOne: {
+          filter: { key: stockKey(product.id, size) },
+          update: {
+            $setOnInsert: {
+              productId: product.id,
+              size,
+              stock: Number(product.defaultStock) || 0,
+            },
+          },
+          upsert: true,
+        },
+      })
     }
   }
 
-  if (added > 0) {
-    persistInventory()
-    console.log(`[inventory] Initialised ${added} new variant stock level(s).`)
+  const result = await InventoryItem.bulkWrite(operations, { ordered: false })
+  const initialised = Number(result.upsertedCount) || 0
+
+  if (initialised > 0) {
+    console.log(`[inventory] Initialised ${initialised} variant stock level(s).`)
+  } else {
+    console.log(
+      `[inventory] ${Object.keys(toStockMap(await loadStockDocuments())).length} variant stock level(s) ready.`,
+    )
   }
 }
 
-export function getStock(productId, size) {
-  return stock.get(stockKey(productId, size)) ?? 0
+export async function getStock(productId, size) {
+  const document = await InventoryItem.findOne({
+    key: stockKey(productId, size),
+  })
+    .select({ stock: 1, _id: 0 })
+    .lean()
+
+  return document?.stock ?? 0
 }
 
-export function getStockMap() {
-  return Object.fromEntries(stock)
+export async function getStockMap() {
+  return toStockMap(await loadStockDocuments())
 }
 
-export function getLowStockVariants() {
+export async function getLowStockVariants() {
+  const stock = toStockMap(await loadStockDocuments())
   const low = []
 
   for (const product of catalog) {
     for (const size of product.sizes) {
-      const quantity = getStock(product.id, size)
+      const quantity = stock[stockKey(product.id, size)] ?? 0
+
       if (quantity <= config.inventory.lowStockThreshold) {
         low.push({
           productId: product.id,
@@ -94,21 +86,27 @@ export function getLowStockVariants() {
   return low
 }
 
-export function getInventorySnapshot() {
+export async function getInventorySnapshot() {
+  const stock = toStockMap(await loadStockDocuments())
+
   return catalog.map((product) => ({
     id: product.id,
     name: product.name,
     category: product.category,
     image: product.image,
-    sizes: product.sizes.map((size) => ({
-      size,
-      stock: getStock(product.id, size),
-      lowStock: getStock(product.id, size) <= config.inventory.lowStockThreshold,
-    })),
+    sizes: product.sizes.map((size) => {
+      const quantity = stock[stockKey(product.id, size)] ?? 0
+
+      return {
+        size,
+        stock: quantity,
+        lowStock: quantity <= config.inventory.lowStockThreshold,
+      }
+    }),
   }))
 }
 
-export function setStock(productId, size, quantity) {
+export async function setStock(productId, size, quantity) {
   const product = findProduct(productId)
 
   if (!product || !findSize(product, size)) {
@@ -125,8 +123,14 @@ export function setStock(productId, size, quantity) {
     return { ok: false, error: 'Stock must be a whole number from 0 to 100000.' }
   }
 
-  stock.set(stockKey(product.id, size), nextQuantity)
-  persistInventory()
+  await InventoryItem.updateOne(
+    { key: stockKey(product.id, size) },
+    {
+      $set: { stock: nextQuantity, productId: product.id, size },
+      $setOnInsert: { key: stockKey(product.id, size) },
+    },
+    { upsert: true },
+  )
 
   return {
     ok: true,
@@ -139,33 +143,53 @@ export function setStock(productId, size, quantity) {
 // Debits stock once a payment has been confirmed. Stock is checked when the
 // order is created; if two orders race for the last item we clamp at zero and
 // log the shortfall rather than failing a payment the customer already made.
-export function decrementStock(items) {
-  const changes = new Map()
-  const shortfalls = []
+export async function decrementStock(items) {
+  const requested = new Map()
 
   for (const item of items ?? []) {
     const key = stockKey(item.productId, item.size)
-    const current = changes.get(key) ?? getStock(item.productId, item.size)
-    const requested = Number(item.qty) || 0
-    const next = Math.max(0, current - requested)
+    requested.set(key, (requested.get(key) ?? 0) + (Number(item.qty) || 0))
+  }
 
-    if (requested > current) {
+  if (requested.size === 0) return { changes: {}, shortfalls: [] }
+
+  const documents = await InventoryItem.find({
+    key: { $in: [...requested.keys()] },
+  })
+    .select({ key: 1, stock: 1, _id: 0 })
+    .lean()
+
+  const currentStock = new Map(
+    documents.map((document) => [document.key, document.stock]),
+  )
+  const changes = {}
+  const shortfalls = []
+  const operations = []
+
+  for (const [key, quantity] of requested) {
+    const current = currentStock.get(key) ?? 0
+    const next = Math.max(0, current - quantity)
+
+    if (quantity > current) {
       shortfalls.push({
-        productId: item.productId,
-        size: item.size,
-        requested,
+        productId: key.split('::')[0],
+        size: key.split('::').slice(1).join('::'),
+        requested: quantity,
         available: current,
       })
     }
 
-    changes.set(key, next)
+    changes[key] = next
+    operations.push({
+      updateOne: {
+        filter: { key },
+        update: { $set: { stock: next } },
+        upsert: true,
+      },
+    })
   }
 
-  for (const [key, quantity] of changes) {
-    stock.set(key, quantity)
-  }
-
-  persistInventory()
+  await InventoryItem.bulkWrite(operations, { ordered: false })
 
   if (shortfalls.length > 0) {
     console.warn(
@@ -174,5 +198,5 @@ export function decrementStock(items) {
     )
   }
 
-  return { changes: Object.fromEntries(changes), shortfalls }
+  return { changes, shortfalls }
 }

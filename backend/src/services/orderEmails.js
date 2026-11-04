@@ -11,7 +11,7 @@ function wasProcessed(status) {
 }
 
 export async function sendOrderConfirmationEmail(order) {
-  const freshOrder = getOrderById(order.id)
+  const freshOrder = await getOrderById(order.id)
 
   if (!freshOrder) {
     return { status: 'failed', sent: false, error: 'Order not found.' }
@@ -24,7 +24,7 @@ export async function sendOrderConfirmationEmail(order) {
   const result = await deliverOrderConfirmation(freshOrder)
 
   if (wasProcessed(result.status)) {
-    updateOrder(order.id, (draft) => {
+    await updateOrder(order.id, (draft) => {
       draft.emails.orderConfirmationSentAt = new Date().toISOString()
     })
   }
@@ -33,7 +33,7 @@ export async function sendOrderConfirmationEmail(order) {
 }
 
 export async function sendPaymentReceiptEmail(order) {
-  const freshOrder = getOrderById(order.id)
+  const freshOrder = await getOrderById(order.id)
 
   if (!freshOrder) {
     return { status: 'failed', sent: false, error: 'Order not found.' }
@@ -46,7 +46,7 @@ export async function sendPaymentReceiptEmail(order) {
   const result = await deliverPaymentReceipt(freshOrder)
 
   if (wasProcessed(result.status)) {
-    updateOrder(order.id, (draft) => {
+    await updateOrder(order.id, (draft) => {
       draft.emails.paymentReceiptSentAt = new Date().toISOString()
     })
   }
@@ -55,7 +55,7 @@ export async function sendPaymentReceiptEmail(order) {
 }
 
 export async function sendAbandonedCartReminder(order) {
-  const freshOrder = getOrderById(order.id)
+  const freshOrder = await getOrderById(order.id)
 
   if (!freshOrder) {
     return { status: 'failed', sent: false, error: 'Order not found.' }
@@ -72,7 +72,7 @@ export async function sendAbandonedCartReminder(order) {
   const result = await deliverAbandonedCart(freshOrder)
 
   if (wasProcessed(result.status)) {
-    updateOrder(order.id, (draft) => {
+    await updateOrder(order.id, (draft) => {
       draft.emails.abandonedCartSentAt = new Date().toISOString()
     })
   }
@@ -81,7 +81,7 @@ export async function sendAbandonedCartReminder(order) {
 }
 
 export async function sendShippedEmail(order) {
-  const freshOrder = getOrderById(order.id)
+  const freshOrder = await getOrderById(order.id)
 
   if (!freshOrder) {
     return { status: 'failed', sent: false, error: 'Order not found.' }
@@ -94,7 +94,7 @@ export async function sendShippedEmail(order) {
   const result = await deliverShippedEmail(freshOrder)
 
   if (wasProcessed(result.status)) {
-    updateOrder(order.id, (draft) => {
+    await updateOrder(order.id, (draft) => {
       draft.emails.shippedEmailSentAt = new Date().toISOString()
     })
   }

@@ -9,7 +9,7 @@ export async function sendSubscriberWelcome(subscriber) {
   const result = await deliverWelcomeEmail(subscriber)
 
   if (result.status === 'sent' || result.status === 'logged') {
-    markWelcomeSent(subscriber.id)
+    await markWelcomeSent(subscriber.id)
   }
 
   return result

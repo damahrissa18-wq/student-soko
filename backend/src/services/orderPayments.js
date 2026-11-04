@@ -6,13 +6,13 @@ export async function markOrderPaid(
   orderId,
   { receiptNumber, phoneNumber, paidAt } = {},
 ) {
-  const existing = getOrderById(orderId)
+  const existing = await getOrderById(orderId)
   if (!existing) return null
 
   const wasAlreadyPaid = existing.status === 'paid'
   let stockDebitPending = false
 
-  const order = updateOrder(orderId, (draft) => {
+  const order = await updateOrder(orderId, (draft) => {
     if (draft.status === 'paid') return
 
     draft.status = 'paid'
@@ -32,7 +32,7 @@ export async function markOrderPaid(
   if (!order) return null
 
   if (stockDebitPending) {
-    decrementStock(order.items)
+    await decrementStock(order.items)
   }
 
   if (

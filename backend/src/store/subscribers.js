@@ -1,61 +1,23 @@
 import crypto from 'node:crypto'
-import fs from 'node:fs'
-import path from 'node:path'
-import { config } from '../config.js'
+import { Subscriber } from '../models/subscriber.js'
 
-const subscribers = new Map()
+const SUBSCRIBER_PROJECTION = { _id: 0, __v: 0 }
 
-loadSubscribers()
-
-function loadSubscribers() {
-  try {
-    const raw = fs.readFileSync(config.subscriberFile, 'utf8')
-    const saved = JSON.parse(raw)
-
-    if (!Array.isArray(saved)) return
-
-    for (const subscriber of saved) {
-      if (subscriber?.email) {
-        subscribers.set(subscriber.email.toLowerCase(), subscriber)
-      }
-    }
-
-    console.log(
-      `[newsletter] Loaded ${subscribers.size} subscriber(s) from ${config.subscriberFile}`,
-    )
-  } catch (error) {
-    if (error.code !== 'ENOENT') {
-      console.error(
-        '[newsletter] Could not read saved subscribers:',
-        error.message,
-      )
-    }
-  }
-}
-
-function persistSubscribers() {
-  try {
-    fs.mkdirSync(path.dirname(config.subscriberFile), { recursive: true })
-    const temporaryFile = `${config.subscriberFile}.tmp`
-    fs.writeFileSync(
-      temporaryFile,
-      JSON.stringify([...subscribers.values()], null, 2),
-      'utf8',
-    )
-    fs.renameSync(temporaryFile, config.subscriberFile)
-  } catch (error) {
-    console.error('[newsletter] Could not save subscribers:', error.message)
-  }
+function toPlainSubscriber(document) {
+  const subscriber = document.toObject()
+  delete subscriber._id
+  delete subscriber.__v
+  return subscriber
 }
 
 function createSubscriberId() {
   return `SUB-${crypto.randomBytes(5).toString('hex').toUpperCase()}`
 }
 
-export function subscribe({ email, name = null, source = 'drop-signup' }) {
-  const key = email.toLowerCase()
-  const existing = subscribers.get(key)
-  const now = new Date().toISOString()
+export async function subscribe({ email, name = null, source = 'drop-signup' }) {
+  const key = String(email).toLowerCase()
+  const now = new Date()
+  const existing = await Subscriber.findOne({ email: key })
 
   if (existing) {
     const wasUnsubscribed = existing.status === 'unsubscribed'
@@ -67,13 +29,17 @@ export function subscribe({ email, name = null, source = 'drop-signup' }) {
       existing.name = name || existing.name || null
       existing.source = source || existing.source
       existing.welcomeEmailSentAt = null
-      persistSubscribers()
+      await existing.save()
     }
 
-    return { subscriber: existing, created: false, resubscribed: wasUnsubscribed }
+    return {
+      subscriber: toPlainSubscriber(existing),
+      created: false,
+      resubscribed: wasUnsubscribed,
+    }
   }
 
-  const subscriber = {
+  const subscriber = await Subscriber.create({
     id: createSubscriberId(),
     email: key,
     name: name || null,
@@ -83,57 +49,51 @@ export function subscribe({ email, name = null, source = 'drop-signup' }) {
     subscribedAt: now,
     unsubscribedAt: null,
     welcomeEmailSentAt: null,
+  })
+
+  return {
+    subscriber: toPlainSubscriber(subscriber),
+    created: true,
+    resubscribed: false,
   }
-
-  subscribers.set(key, subscriber)
-  persistSubscribers()
-
-  return { subscriber, created: true, resubscribed: false }
 }
 
-export function getSubscriberByToken(token) {
+export async function getSubscriberByToken(token) {
   if (!token) return null
 
-  for (const subscriber of subscribers.values()) {
-    if (subscriber.token === token) return subscriber
-  }
-
-  return null
+  return Subscriber.findOne({ token: String(token) }).lean()
 }
 
-export function unsubscribe(token) {
-  const subscriber = getSubscriberByToken(token)
+export async function unsubscribe(token) {
+  const subscriber = await Subscriber.findOne({ token: String(token) })
   if (!subscriber) return null
 
   if (subscriber.status !== 'unsubscribed') {
     subscriber.status = 'unsubscribed'
-    subscriber.unsubscribedAt = new Date().toISOString()
-    persistSubscribers()
+    subscriber.unsubscribedAt = new Date()
+    await subscriber.save()
   }
 
-  return subscriber
+  return toPlainSubscriber(subscriber)
 }
 
-export function markWelcomeSent(subscriberId) {
-  const subscriber = [...subscribers.values()].find(
-    (item) => item.id === subscriberId,
-  )
+export async function markWelcomeSent(subscriberId) {
+  const subscriber = await Subscriber.findOneAndUpdate(
+    { id: subscriberId },
+    { $set: { welcomeEmailSentAt: new Date() } },
+    { returnDocument: 'after', projection: SUBSCRIBER_PROJECTION },
+  ).lean()
 
-  if (!subscriber) return null
-
-  subscriber.welcomeEmailSentAt = new Date().toISOString()
-  persistSubscribers()
-  return subscriber
+  return subscriber ?? null
 }
 
-export function listSubscribers() {
-  return [...subscribers.values()]
-    .sort((a, b) => String(b.subscribedAt).localeCompare(String(a.subscribedAt)))
-    .map(({ token: _token, ...subscriber }) => subscriber)
+export async function listSubscribers() {
+  return Subscriber.find({})
+    .select({ token: 0, _id: 0, __v: 0 })
+    .sort({ subscribedAt: -1 })
+    .lean()
 }
 
-export function countActiveSubscribers() {
-  return [...subscribers.values()].filter(
-    (subscriber) => subscriber.status === 'subscribed',
-  ).length
+export async function countActiveSubscribers() {
+  return Subscriber.countDocuments({ status: 'subscribed' })
 }

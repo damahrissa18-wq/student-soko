@@ -6,7 +6,10 @@
   "description": "Checkout API for StudentsSoko: order confirmation emails, M-Pesa STK Push and payment receipts.",
   "scripts": {
     "dev": "node --watch src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "db:check": "node scripts/check-db.js",
+    "db:migrate": "node scripts/migrate-json.js",
+    "test:smoke": "node scripts/smoke-test.js"
   },
   "engines": {
     "node": ">=20"
@@ -15,6 +18,7 @@
     "cors": "^2.8.6",
     "dotenv": "^18.0.9",
     "express": "^5.3.0",
+    "mongoose": "^9.11.4",
     "resend": "^6.37.0"
   }
 }

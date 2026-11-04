@@ -5,10 +5,10 @@ import { getStockMap } from '../store/inventory.js'
 
 const router = Router()
 
-router.get('/', (_request, response) => {
+router.get('/', async (_request, response) => {
   response.json({
     products: catalog.map(publicProduct),
-    stock: getStockMap(),
+    stock: await getStockMap(),
     lowStockThreshold: config.inventory.lowStockThreshold,
   })
 })

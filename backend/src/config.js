@@ -16,6 +16,13 @@ const readBoolean = (value) => readText(value).toLowerCase() === 'true'
 const readBooleanWithDefault = (value, fallback) =>
   readText(value) === '' ? fallback : readBoolean(value)
 
+const mongo = {
+  uri: readText(process.env.MONGODB_URI),
+  dbName: readText(process.env.MONGODB_DB) || 'studentsoko',
+  username: readText(process.env.MONGODB_USERNAME),
+  password: readText(process.env.MONGODB_PASSWORD),
+}
+
 const resendApiKey = readText(process.env.RESEND_API_KEY)
 const requestedEmailMode = readText(process.env.EMAIL_MODE).toLowerCase()
 const nodeEnv = readText(process.env.NODE_ENV) || 'development'
@@ -48,6 +55,7 @@ const mpesaConfigured = Boolean(
 export const config = {
   port: readInt(process.env.PORT, 4000),
   nodeEnv,
+  mongo,
   siteUrl: (readText(process.env.SITE_URL) || 'http://localhost:5173').replace(
     /\/$/,
     '',

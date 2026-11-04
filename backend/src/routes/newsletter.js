@@ -47,7 +47,7 @@ router.post('/', async (request, response) => {
     })
   }
 
-  const { subscriber, created, resubscribed } = subscribe({
+  const { subscriber, created, resubscribed } = await subscribe({
     email,
     name,
     source,
@@ -76,14 +76,14 @@ router.post('/', async (request, response) => {
   })
 })
 
-router.get('/unsubscribe', (request, response) => {
+router.get('/unsubscribe', async (request, response) => {
   const token = String(request.query.token ?? '').trim()
 
   if (!token) {
     return response.status(400).json({ error: 'Missing unsubscribe token.' })
   }
 
-  const subscriber = getSubscriberByToken(token)
+  const subscriber = await getSubscriberByToken(token)
 
   if (!subscriber) {
     return response.status(404).json({
@@ -91,7 +91,7 @@ router.get('/unsubscribe', (request, response) => {
     })
   }
 
-  unsubscribe(token)
+  await unsubscribe(token)
 
   return response.json({
     ok: true,

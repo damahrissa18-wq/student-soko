@@ -18,7 +18,7 @@ async function sweep() {
     const oldestAllowed =
       now - Math.max(1, config.abandonedCart.maxAgeDays) * 24 * 60 * MINUTE
 
-    const candidates = getAllOrders().filter((order) => {
+    const candidates = (await getAllOrders()).filter((order) => {
       if (!['pending_payment', 'payment_failed'].includes(order.status)) {
         return false
       }

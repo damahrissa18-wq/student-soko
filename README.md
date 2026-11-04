@@ -29,12 +29,45 @@ Demo mode is the default when no API keys are configured:
 - M-Pesa payments auto-confirm after ~5 seconds, so you can see the full order → paid → receipt flow.
 - `ADMIN_TOKEN` falls back to `dev-admin-token` outside production.
 
+### Database (required)
+
+Orders, stock levels and newsletter subscribers are stored in MongoDB.
+
+Add your cluster connection string to `backend/.env`:
+
+```env
+MONGODB_URI=mongodb+srv://<user>:<password>@cluster0.xxxxx.mongodb.net
+MONGODB_DB=studentsoko
+```
+
+`MONGODB_DB` is optional and defaults to `studentsoko`. If the URI does not
+include credentials, set `MONGODB_USERNAME` and `MONGODB_PASSWORD` and they will
+be inserted automatically.
+
+Check the connection and read/write access before starting the API:
+
+```bash
+cd backend
+npm run db:check
+```
+
+Coming from the old JSON files in `backend/data/`? Import them once:
+
+```bash
+npm run db:migrate               # insert only; existing documents win
+npm run db:migrate -- --force    # overwrite existing documents
+```
+
+Stock for any catalog variant missing from the database is seeded from
+`shared/products.json` on startup.
+
 **Terminal 1 — backend**
 
 ```bash
 cd backend
 npm install
 copy .env.example .env      # Windows; use `cp` on macOS/Linux
+# then add MONGODB_URI to backend/.env
 npm run dev
 ```
 
@@ -65,7 +98,7 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 - `colors` as named values with hex codes (for example `{ "name": "Ink", "hex": "#121212" }`)
 - `defaultStock` used the first time a size is seen
 
-Stock is tracked per `productId::size` in `backend/data/inventory.json`. It is checked when an order is created and reduced once when payment is confirmed. This is a simple non-reservation model: stock is not held while an M-Pesa prompt is open.
+Stock is tracked per `productId::size` in the `inventory` collection in MongoDB. It is checked when an order is created and reduced once when payment is confirmed. This is a simple non-reservation model: stock is not held while an M-Pesa prompt is open.
 
 To add a product, add it to `shared/products.json` and restart both apps. New size entries are initialised automatically.
 
@@ -154,7 +187,7 @@ How it works:
 
 ## Newsletter and abandoned carts
 
-**Newsletter** — the storefront's drop-list form posts to `POST /api/newsletter`. Subscribers are stored in `backend/data/subscribers.json`. New subscribers receive a welcome email with an unsubscribe link. Unsubscribing through `/unsubscribe?token=...` updates the record and keeps it for audit purposes.
+**Newsletter** — the storefront's drop-list form posts to `POST /api/newsletter`. Subscribers are stored in the `subscribers` collection in MongoDB. New subscribers receive a welcome email with an unsubscribe link. Unsubscribing through `/unsubscribe?token=...` updates the record and keeps it for audit purposes.
 
 **Abandoned cart** — a background sweeper checks unpaid orders (`pending_payment` or `payment_failed`) and sends one reminder email after the configured delay. The email links to the order's tracking page so the customer can resume payment. Configure or disable it with:
 
@@ -203,6 +236,9 @@ Set `VITE_PLAUSIBLE_DOMAIN` to load the privacy-friendly Plausible script. If it
 | --- | --- |
 | `PORT` | API port, default `4000` |
 | `NODE_ENV` | Set to `production` on your host; disables the dev admin fallback |
+| `MONGODB_URI` | MongoDB Atlas connection string (**required**) |
+| `MONGODB_DB` | Database name, default `studentsoko` |
+| `MONGODB_USERNAME` / `MONGODB_PASSWORD` | Optional; used when `MONGODB_URI` has no credentials |
 | `CORS_ORIGIN` | Comma-separated allowed frontend origins |
 | `SITE_URL` | Public frontend URL used in email links, default `http://localhost:5173` |
 | `ADMIN_TOKEN` | Bearer token for `/api/admin`; required in production |
@@ -218,9 +254,7 @@ Set `VITE_PLAUSIBLE_DOMAIN` to load the privacy-friendly Plausible script. If it
 | `MPESA_CALLBACK_URL` | Public HTTPS callback URL |
 | `MPESA_MOCK` | `true` forces simulated payments |
 | `ABANDONED_CART_*` | Enable, delay, sweep interval and max age for reminders |
-| `ORDER_STORE_FILE` | Optional path for the JSON order store |
-| `INVENTORY_STORE_FILE` | Optional path for inventory |
-| `SUBSCRIBER_STORE_FILE` | Optional path for newsletter subscribers |
+| `ORDER_STORE_FILE`, `INVENTORY_STORE_FILE`, `SUBSCRIBER_STORE_FILE` | Legacy JSON paths, read only by `npm run db:migrate` |
 
 ### Frontend (`frontend/.env`)
 
@@ -240,7 +274,7 @@ The frontend uses a Vite proxy for `/api` in development. If you host the API on
 
 | Method | Route | Description |
 | --- | --- | --- |
-| `GET` | `/api/health` | Email, M-Pesa, admin and abandoned-cart modes |
+| `GET` | `/api/health` | Database, email, M-Pesa, admin and abandoned-cart modes |
 | `GET` | `/api/catalog` | Products, variants, stock map and low-stock threshold |
 | `POST` | `/api/orders` | Create order, send confirmation, start STK Push |
 | `POST` | `/api/orders/lookup` | Find an order by order number + email |
@@ -260,8 +294,8 @@ Order prices are always taken from `shared/products.json`. Never trust prices or
 
 ## Before going live
 
-- Replace the JSON stores with a real database and object storage where appropriate. The current stores are fine for development but are not designed for multiple server instances or high traffic.
-- The JSON stores contain customer PII, order access tokens and subscriber tokens in plain text. Protect the files and move to a database before launch.
+- MongoDB now stores orders, stock and subscribers. Use a dedicated database user with read/write access to this database only, restrict access by IP in Atlas, and enable backups and point-in-time recovery.
+- The database stores customer PII, order access tokens and subscriber tokens in plain text. Treat the connection string as a secret and never commit `backend/.env`.
 - Set a strong `ADMIN_TOKEN`, `NODE_ENV=production`, a real `SITE_URL`, and production `CORS_ORIGIN`.
 - Put the API behind HTTPS and add rate limiting at the edge for checkout, lookup, newsletter and admin endpoints.
 - Restrict the M-Pesa callback to Safaricom's published IP ranges (or put it behind a WAF). The callback validates the `CheckoutRequestID` and amount, but IP allowlisting is an extra layer.
@@ -274,8 +308,11 @@ Order prices are always taken from `shared/products.json`. Never trust prices or
 
 ```bash
 # backend
-npm run dev      # node --watch
-npm start        # production start
+npm run dev        # node --watch
+npm start          # production start
+npm run db:check   # verify MongoDB connection, indexes and read/write access
+npm run db:migrate # import legacy backend/data/*.json (add -- --force to overwrite)
+npm run test:smoke # end-to-end API test (API must be running; cleans up after itself)
 
 # frontend
 npm run dev

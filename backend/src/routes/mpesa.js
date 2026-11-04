@@ -18,7 +18,7 @@ router.post('/callback', async (request, response) => {
       return response.status(200).json(SAFARICOM_ACKNOWLEDGEMENT)
     }
 
-    const order = getOrderByCheckoutRequestId(event.checkoutRequestId)
+    const order = await getOrderByCheckoutRequestId(event.checkoutRequestId)
 
     if (!order || order.payment?.checkoutRequestId !== event.checkoutRequestId) {
       console.warn(
@@ -37,7 +37,7 @@ router.post('/callback', async (request, response) => {
           `[mpesa] Successful callback for ${order.id} did not include an amount. Order was not marked paid.`,
         )
 
-        updateOrder(order.id, (draft) => {
+        await updateOrder(order.id, (draft) => {
           draft.payment.message =
             'M-Pesa did not provide a payment amount. Please contact support.'
         })
@@ -50,7 +50,7 @@ router.post('/callback', async (request, response) => {
           `[mpesa] Amount mismatch for ${order.id}: received ${event.amount}, expected ${order.total}. Order was not marked paid.`,
         )
 
-        updateOrder(order.id, (draft) => {
+        await updateOrder(order.id, (draft) => {
           draft.payment.message =
             'M-Pesa confirmed a different amount. Please contact support.'
         })
@@ -70,7 +70,7 @@ router.post('/callback', async (request, response) => {
         }${paidOrder?.status === 'paid' ? '' : ' — order could not be updated'}`,
       )
     } else {
-      updateOrder(order.id, (draft) => {
+      await updateOrder(order.id, (draft) => {
         draft.status = 'payment_failed'
         draft.payment.status = 'failed'
         draft.payment.message = event.resultDesc
